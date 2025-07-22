@@ -32,7 +32,7 @@ class WhisprNetApp extends StatelessWidget {
               primarySwatch: Colors.blue,
               primaryColor: const Color(0xFF0077FF),
               scaffoldBackgroundColor: Colors.white,
-              fontFamily: 'Poppins',
+              // Remove fontFamily reference since we don't have the font files
               appBarTheme: const AppBarTheme(
                 backgroundColor: Color(0xFF0077FF),
                 foregroundColor: Colors.white,
@@ -54,7 +54,7 @@ class WhisprNetApp extends StatelessWidget {
               primarySwatch: Colors.blue,
               primaryColor: const Color(0xFF0077FF),
               scaffoldBackgroundColor: const Color(0xFF121212),
-              fontFamily: 'Poppins',
+              // Remove fontFamily reference
               appBarTheme: const AppBarTheme(
                 backgroundColor: Color(0xFF121212),
                 foregroundColor: Colors.white,

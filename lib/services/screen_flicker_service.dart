@@ -2,86 +2,112 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class ScreenFlickerService {
-  OverlayEntry? _overlayEntry;
   bool _isTransmitting = false;
 
   Future<void> transmitMessage(
     String binaryData,
     int bitDuration,
-    {Function(double)? onProgress}
+    {Function(double)? onProgress, required BuildContext context}
   ) async {
     if (_isTransmitting) return;
     
     _isTransmitting = true;
     
     try {
-      // Create fullscreen overlay
-      _createFlickerOverlay();
-      
-      // Transmit each bit
-      for (int i = 0; i < binaryData.length; i++) {
-        if (!_isTransmitting) break;
-        
-        String bit = binaryData[i];
-        await _flickerBit(bit, bitDuration);
-        
-        // Update progress
-        onProgress?.call((i + 1) / binaryData.length);
-      }
-      
-      // Final black screen
-      await _flickerBit('0', bitDuration);
+      // Navigate to fullscreen flicker view
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => FlickerScreen(
+            binaryData: binaryData,
+            bitDuration: bitDuration,
+            onProgress: onProgress,
+          ),
+        ),
+      );
       
     } finally {
-      _removeFlickerOverlay();
       _isTransmitting = false;
     }
   }
 
-  Future<void> _flickerBit(String bit, int duration) async {
-    Color color = bit == '1' ? Colors.white : Colors.black;
-    
-    _updateFlickerColor(color);
-    await Future.delayed(Duration(milliseconds: duration));
-  }
-
-  void _createFlickerOverlay() {
-    _overlayEntry = OverlayEntry(
-      builder: (context) => FlickerOverlay(),
-    );
-    
-    // We need to get the overlay from the current context
-    // This is a simplified version - in a real app you'd need proper context management
-  }
-
-  void _updateFlickerColor(Color color) {
-    // Update the overlay color
-    // This would need to be implemented with proper state management
-  }
-
-  void _removeFlickerOverlay() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
-  }
-
   void dispose() {
     _isTransmitting = false;
-    _removeFlickerOverlay();
   }
 }
 
-class FlickerOverlay extends StatefulWidget {
+class FlickerScreen extends StatefulWidget {
+  final String binaryData;
+  final int bitDuration;
+  final Function(double)? onProgress;
+
+  const FlickerScreen({
+    Key? key,
+    required this.binaryData,
+    required this.bitDuration,
+    this.onProgress,
+  }) : super(key: key);
+
   @override
-  _FlickerOverlayState createState() => _FlickerOverlayState();
+  _FlickerScreenState createState() => _FlickerScreenState();
 }
 
-class _FlickerOverlayState extends State<FlickerOverlay> {
+class _FlickerScreenState extends State<FlickerScreen> {
   Color _currentColor = Colors.black;
+  int _currentBitIndex = 0;
+  bool _isTransmitting = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTransmission();
+  }
+
+  Future<void> _startTransmission() async {
+    // Set screen to maximum brightness
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+    
+    for (int i = 0; i < widget.binaryData.length && _isTransmitting; i++) {
+      String bit = widget.binaryData[i];
+      
+      setState(() {
+        _currentColor = bit == '1' ? Colors.white : Colors.black;
+        _currentBitIndex = i;
+      });
+      
+      await Future.delayed(Duration(milliseconds: widget.bitDuration));
+      
+      // Update progress
+      widget.onProgress?.call((i + 1) / widget.binaryData.length);
+    }
+    
+    // Final black screen
+    setState(() {
+      _currentColor = Colors.black;
+    });
+    
+    await Future.delayed(Duration(milliseconds: 500));
+    
+    // Restore system UI
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  void dispose() {
+    _isTransmitting = false;
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      child: Container(
+    return Scaffold(
+      backgroundColor: _currentColor,
+      body: Container(
         width: double.infinity,
         height: double.infinity,
         color: _currentColor,
@@ -105,9 +131,17 @@ class _FlickerOverlayState extends State<FlickerOverlay> {
               ),
               SizedBox(height: 8),
               Text(
-                'Keep this screen visible to receiver',
+                'Bit ${_currentBitIndex + 1} of ${widget.binaryData.length}',
                 style: TextStyle(
                   fontSize: 16,
+                  color: _currentColor == Colors.white ? Colors.black54 : Colors.white70,
+                ),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Keep screen visible to receiver',
+                style: TextStyle(
+                  fontSize: 14,
                   color: _currentColor == Colors.white ? Colors.black54 : Colors.white70,
                 ),
               ),
@@ -116,11 +150,5 @@ class _FlickerOverlayState extends State<FlickerOverlay> {
         ),
       ),
     );
-  }
-
-  void updateColor(Color color) {
-    setState(() {
-      _currentColor = color;
-    });
   }
 }

@@ -253,6 +253,7 @@ class _SenderScreenState extends State<SenderScreen> {
       await _flickerService.transmitMessage(
         encodedBits,
         provider.flickerSpeed,
+        context: context,
         onProgress: (progress) {
           setState(() {
             _progress = progress;
