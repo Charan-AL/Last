@@ -24,7 +24,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.example.whisprnet"
-    compileSdk 34
+    compileSdk 36  // Updated to 36 as required by plugins
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -43,7 +43,7 @@ android {
     defaultConfig {
         applicationId "com.example.whisprnet"
         minSdkVersion 23
-        targetSdkVersion 34
+        targetSdkVersion 34  // Keep target SDK at 34 for compatibility
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
